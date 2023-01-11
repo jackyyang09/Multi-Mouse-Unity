@@ -15,5 +15,7 @@ You must use Unity 2021.3 or newer to use MultiMouse, otherwise it will crash in
 
 # Credits 
 Brogrammist - MultiMouseUnity
+
 Mystery Wizard - The original MultiMouse plugin
+
 tomkail - PlayerLoopUtils and some lightgun logic
