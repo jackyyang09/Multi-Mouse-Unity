@@ -1,7 +1,7 @@
 # Overview
 MultiMouseUnity is a Unity implementation and wrapper of Mystery Wizard's [MultiMouse](https://www.sindenwiki.org/wiki/The_House_of_the_Dead_Remake) plugin to get multiple mouse devices working and usable within Unity applications.
 
-This early version is only meant for experienced Unity developers for the purpose of lightgun game development.
+This early version is meant for experienced Unity developers for the purpose of jumping into lightgun game development and helping test for usability issues/bugs.
 
 Please check out the ExampleGame scene to learn all the ways you can use ManyMouseUnity in your project
 
