@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 258193687855429236}
   - component: {fileID: 258193687855429237}
-  - component: {fileID: 258193687855429243}
   m_Layer: 0
   m_Name: MultiMouseInterface
   m_TagString: Untagged
@@ -49,15 +48,3 @@ MonoBehaviour:
   detectDevicesOnStart: 1
   maxDevices: 4
   keepDetectingUntilFull: 1
---- !u!114 &258193687855429243
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 258193687855429242}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c4ce1de303d1b474f89a229627652c38, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 

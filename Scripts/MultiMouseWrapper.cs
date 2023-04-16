@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-namespace MultiMouse
+namespace MultiMouseUnity
 {
     //public enum DeviceDetectionMethod
     //{
@@ -22,25 +22,27 @@ namespace MultiMouse
         public bool IsLightgun;
     }
 
-    [RequireComponent(typeof(MultiMouse))]
     public class MultiMouseWrapper : MonoBehaviour
     {
-        [SerializeField] bool unclampMousePosition;
-        [SerializeField] bool detectDevicesOnStart = true;
-        [SerializeField] int maxDevices = 4;
-        [SerializeField] bool keepDetectingUntilFull = true;
-
         List<MultiMouseDevice> activeDevices = new List<MultiMouseDevice>();
+        public int ActiveDeviceCount => activeDevices.Count;
+
         Dictionary<string, MultiMouseDevice> idToDevice = new Dictionary<string, MultiMouseDevice>();
+
         /// <summary>
-        /// 
+        /// Attempts to get a MultiMouseDevice, returns null if none found
         /// </summary>
         /// <param name="index"></param>
         /// <returns></returns>
         public MultiMouseDevice TryGetDeviceAtIndex(int index)
         {
-            if (index >= activeDevices.Count) return null;
+            if (!IsMouseActive(index)) return null;
             return activeDevices[index];
+        }
+
+        public bool IsMouseActive(int index)
+        {
+            return Mathf.Abs(index) < activeDevices.Count;
         }
 
         const int MAX_BUTTONS = 4;
@@ -51,6 +53,8 @@ namespace MultiMouse
         List<bool[]> isButtonDown = new List<bool[]>();
 
         bool mouseHeld;
+
+        MultiMouseSettings settings => MultiMouseSettings.Settings;
 
         static MultiMouseWrapper instance;
         public static MultiMouseWrapper Instance
@@ -75,6 +79,8 @@ namespace MultiMouse
         /// </summary>
         public static System.Action<int> OnDeviceFound;
 
+        public static bool Initialized => MultiMouse.Initialized;
+
         #region Events
         static System.Action[] onLeftMouseButtonDown;
         public static System.Action[] OnLeftMouseButtonDown
@@ -83,7 +89,7 @@ namespace MultiMouse
             {
                 if (onLeftMouseButtonDown == null)
                 {
-                    onLeftMouseButtonDown = new System.Action[Instance.maxDevices];
+                    onLeftMouseButtonDown = new System.Action[Instance.settings.maxDevices];
                 }
                 return onLeftMouseButtonDown;
             }
@@ -96,7 +102,7 @@ namespace MultiMouse
             {
                 if (onLeftMouseButtonUp == null)
                 {
-                    onLeftMouseButtonUp = new System.Action[Instance.maxDevices];
+                    onLeftMouseButtonUp = new System.Action[Instance.settings.maxDevices];
                 }
                 return onLeftMouseButtonUp;
             }
@@ -109,7 +115,7 @@ namespace MultiMouse
             {
                 if (onRightMouseButtonDown == null)
                 {
-                    onRightMouseButtonDown = new System.Action[Instance.maxDevices];
+                    onRightMouseButtonDown = new System.Action[Instance.settings.maxDevices];
                 }
                 return onRightMouseButtonDown;
             }
@@ -122,7 +128,7 @@ namespace MultiMouse
             {
                 if (onRightMouseButtonUp == null)
                 {
-                    onRightMouseButtonUp = new System.Action[Instance.maxDevices];
+                    onRightMouseButtonUp = new System.Action[Instance.settings.maxDevices];
                 }
                 return onRightMouseButtonUp;
             }
@@ -138,15 +144,53 @@ namespace MultiMouse
             UnityEngine.LowLevel.PlayerLoop.SetPlayerLoop(playerLoop);
         }
 
+        bool destroySelf;
+        private void Awake()
+        {
+            if (Instance != null)
+            {
+                if (Instance.gameObject.scene.name == "DontDestroyOnLoad")
+                {
+                    destroySelf = true;
+                    Destroy(gameObject);
+                }
+                else if (string.IsNullOrEmpty(Instance.gameObject.scene.name))
+                {
+                    instance = null;
+                }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                instance = null;
+                if (MultiMouse.Initialized) MultiMouse.Destroy();
+            }
+        }
+
         private void Start()
         {
+            if (destroySelf) return;
+
+            if (settings == null)
+            {
+                enabled = false;
+                DebugError("Could not find MultiMouse Settings! " +
+                    "If you continue to see this message, you may have to restart the Unity Editor.");
+                return;
+            }
+
+            MultiMouse.Initialize();
+
             if (transform.parent != null)
             {
                 transform.SetParent(null);
-                DontDestroyOnLoad(this);
             }
+            DontDestroyOnLoad(this);
 
-            if (detectDevicesOnStart)
+            if (settings.detectDevicesOnStart)
             {
                 detectDeviceRoutine = StartCoroutine(DetectDevice());
             }
@@ -163,7 +207,7 @@ namespace MultiMouse
             {
                 if (detectDeviceRoutine == null)
                 {
-                    MultiMouse.MultiMouse_Poll(activeDevices[i].DeviceID);
+                    MultiMouse.MultiMousePoll(activeDevices[i].DeviceID);
                 }
 
                 for (int j = 1; j <= MAX_BUTTONS; j++)
@@ -195,6 +239,8 @@ namespace MultiMouse
                         }
                     }
                 }
+
+                UpdateMousePosition(activeDevices[i]);
             }
         }
 
@@ -235,7 +281,7 @@ namespace MultiMouse
 
                 OnDeviceFound?.Invoke(activeDevices.Count - 1);
             }
-            while (keepDetectingUntilFull && activeDevices.Count < maxDevices);
+            while (settings.keepDetectingUntilFull && activeDevices.Count < settings.maxDevices);
 
             detectDeviceRoutine = null;
         }
@@ -248,7 +294,11 @@ namespace MultiMouse
         /// <returns></returns>
         public bool GetMouseButton(int deviceID, int buttonIndex)
         {
-            if (isButtonDown.Count <= deviceID) return false;
+            if (!IsMouseActive(deviceID))
+            {
+                DebugWarning("No device found at ID " + deviceID);
+                return false;
+            }
             return isButtonDown[deviceID][buttonIndex + 1];
         }
 
@@ -261,7 +311,11 @@ namespace MultiMouse
         public bool GetMouseButtonDown(int deviceID, int buttonIndex)
         {
             var device = TryGetDeviceAtIndex(deviceID);
-            if (device == null) return false;
+            if (device == null)
+            {
+                DebugWarning("No device found at ID " + deviceID);
+                return false;
+            }
 
             return MultiMouse.GetMouseButtonDown(device.DeviceID, buttonIndex + 1);
         }
@@ -275,16 +329,17 @@ namespace MultiMouse
         public bool GetMouseButtonUp(int deviceID, int buttonIndex)
         {
             var device = TryGetDeviceAtIndex(deviceID);
-            if (device == null) return false;
+            if (device == null)
+            {
+                DebugWarning("No device found at ID " + deviceID);
+                return false;
+            }
 
             return MultiMouse.GetMouseButtonUp(device.DeviceID, buttonIndex + 1);
         }
 
-        public Vector2 GetMousePosition(int deviceID)
+        void UpdateMousePosition(MultiMouseDevice device)
         {
-            var device = TryGetDeviceAtIndex(deviceID);
-            if (device == null) return Vector2.zero;
-
             if (device.IsLightgun)
             {
                 var pos = MultiMouse.GetAbsoluteMousePosition(device.DeviceID);
@@ -297,19 +352,48 @@ namespace MultiMouse
                 var y = Mathf.InverseLerp(rect.yMax, rect.yMin, pos.y);
 
                 device.Position = new Vector2(x * Screen.width, y * Screen.height);
-                Debug.Log(device.Position + " " + rect);
-            }   
+                //Debug.Log(device.Position + " " + rect);
+            }
             else
             {
                 device.Position += MultiMouse.GetRelativeMousePosition(device.DeviceID);
-                if (!unclampMousePosition)
+                if (!settings.unclampMousePosition)
                 {
                     device.Position = new Vector2(
                         Mathf.Clamp(device.Position.x, 0, Screen.width),
                         Mathf.Clamp(device.Position.y, 0, Screen.height));
                 }
             }
+        }
+
+        public Vector2 GetMousePosition(int deviceID)
+        {
+            var device = TryGetDeviceAtIndex(deviceID);
+            if (device == null)
+            {
+                DebugWarning("No device found at ID " + deviceID);
+                return Vector2.zero;
+            }
+
             return device.Position;
+        }
+
+        private void OnApplicationFocus(bool focus)
+        {
+            if (!MultiMouse.Initialized || !focus) return;
+            Debug.Log("Application regained focus, re-initializing MultiMouse...");
+            MultiMouse.Destroy();
+            MultiMouse.Initialize();
+        }
+
+        void DebugWarning(string message)
+        {
+            Debug.LogWarning("MultiMouse Warning: " + message);
+        }
+
+        void DebugError(string message)
+        {
+            Debug.LogWarning("MultiMouse Error: " + message);
         }
 
 #if UNITY_EDITOR

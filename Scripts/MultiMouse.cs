@@ -4,17 +4,17 @@ using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
 
-namespace MultiMouse
+namespace MultiMouseUnity
 {
     /// <summary>
     /// MultiMouseLib created by Mystery Wizard
     /// </summary>
-    class MultiMouse : MonoBehaviour
+    class MultiMouse
     {
         #region External Methods
         private static IntPtr _currentWindowHandle = IntPtr.Zero;
 
-        public static IntPtr UnityWindowHandle
+        static IntPtr UnityWindowHandle
         {
             get
             {
@@ -41,13 +41,13 @@ namespace MultiMouse
         /// <param name="hWnd"></param>
         /// <returns></returns>
         [DllImport("MultiMouseLib.dll")]
-        public static extern bool MultiMouse_Init(byte bUseInternalWindow, byte bImmediateCapture, IntPtr hWnd);
+        static extern bool MultiMouse_Init(byte bUseInternalWindow, byte bImmediateCapture, IntPtr hWnd);
 
         /*
          * DevId is the PID/VID combination as a string for the device, MultiMouse_DetectDevice facilitates a way to grab this automatically when a button is pressed on any device.
          */
         [DllImport("MultiMouseLib.dll")]
-        public static extern void MultiMouse_Poll(string mDevId);
+        static extern void MultiMouse_Poll(string mDevId);
 
         /// <summary>
         /// This will only trigger once per Poll event if the button transition state changes, this will not tell you if the button is still down only when it has been pressed.
@@ -56,7 +56,7 @@ namespace MultiMouse
         /// <param name="buttonIdx"></param>
         /// <returns></returns>
         [DllImport("MultiMouseLib.dll")]
-        public static extern bool MultiMouse_ButtonDown(string mDevId, byte buttonIdx);
+        static extern bool MultiMouse_ButtonDown(string mDevId, byte buttonIdx);
 
         /// <summary>
         /// After receiving a button down event, this can be listened/polled for in order to determine if a previously pressed button has been lifted.
@@ -65,7 +65,7 @@ namespace MultiMouse
         /// <param name="buttonIdx"></param>
         /// <returns></returns>
         [DllImport("MultiMouseLib.dll")]
-        public static extern bool MultiMouse_ButtonUp(string mDevId, byte buttonIdx);
+        static extern bool MultiMouse_ButtonUp(string mDevId, byte buttonIdx);
 
         /// <summary>
         /// Used to facilitate getting the most accurate/most recent and up to date absolute coordinates for the pointer device.
@@ -74,7 +74,7 @@ namespace MultiMouse
         /// <param name="x"></param>
         /// <param name="y"></param>
         [DllImport("MultiMouseLib.dll")]
-        public static extern void MultiMouse_GetAbsCords(string mDevId, ref int x, ref int y);
+        static extern void MultiMouse_GetAbsCords(string mDevId, ref int x, ref int y);
 
         /// <summary>
         /// This is for non-pointing devices which return relative coordinates, all coordinates sent since the last poll are automatically summarized in a single delta.
@@ -83,10 +83,10 @@ namespace MultiMouse
         /// <param name="x"></param>
         /// <param name="y"></param>
         [DllImport("MultiMouseLib.dll")]
-        public static extern void MultiMouse_GetRelativeCords(string mDevId, ref int x, ref int y);
+        static extern void MultiMouse_GetRelativeCords(string mDevId, ref int x, ref int y);
 
         [DllImport("MultiMouseLib.dll")]
-        public static extern bool MultiMouse_Destroy(IntPtr hWnd);
+        static extern bool MultiMouse_Destroy(IntPtr hWnd);
 
         /// <summary>
         /// Warning this will automatically poll for you, you do not need to call MultiMouse_Poll while calling this but, You should still be calling it once per frame.
@@ -99,15 +99,16 @@ namespace MultiMouse
         /// <param name="buttonIdx"></param>
         /// <param name="devId"></param>
         [DllImport("MultiMouseLib.dll")]
-        public static extern void MultiMouse_DetectDevice(byte buttonIdx, StringBuilder devId);
+        static extern void MultiMouse_DetectDevice(byte buttonIdx, StringBuilder devId);
         #endregion
 
         const byte bUseInternalWindow = 1;
         const byte bImmediateCapture = 1;
 
-        bool initialized;
+        static bool initialized;
+        public static bool Initialized => initialized;
 
-        static public bool Init_MultiMouse()
+        static bool Init_MultiMouse()
         {
             bool success = MultiMouse_Init(bUseInternalWindow, bImmediateCapture, UnityWindowHandle);
             if (success) Debug.Log("MultiMouse initialized successfully");
@@ -115,17 +116,14 @@ namespace MultiMouse
             return success;
         }
 
-        private void Start()
+        public static void Initialize()
         {
             initialized = Init_MultiMouse();
         }
 
-        private void OnApplicationFocus(bool focus)
+        public static void MultiMousePoll(string mDevId)
         {
-            if (!initialized || !focus) return;
-            Debug.Log("Application regained focus, re-initializing MultiMouse...");
-            MultiMouse_Destroy(UnityWindowHandle);
-            enabled = Init_MultiMouse();
+            MultiMouse_Poll(mDevId);
         }
 
         public static string GetAnyMousePressingButton(int mouseButton)
@@ -161,7 +159,7 @@ namespace MultiMouse
             return new Vector2(x, -y);
         }
 
-        private void OnDestroy()
+        public static void Destroy()
         {
             MultiMouse_Destroy(UnityWindowHandle);
         }
