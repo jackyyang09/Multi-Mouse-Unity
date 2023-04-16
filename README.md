@@ -5,6 +5,8 @@ This early version is meant for experienced Unity developers for the purpose of 
 
 Please check out the ExampleGame scene to learn all the ways you can use ManyMouseUnity in your project
 
+https://user-images.githubusercontent.com/11392541/211867078-4d05bcbd-1ad4-47e1-98d7-daee6032b642.mp4
+
 # Requirements
 You must use Unity 2021.3 or newer to use MultiMouse, otherwise it will crash in-editor. It should also work in 2021.2, but we haven't tested/confirmed that yet.
 
