@@ -1,0 +1,21 @@
+{
+  "name": "com.brogrammist.multimouseunity",
+  "version": "0.0.2",
+  "displayName": "Multi Mouse Unity",
+  "description": "Get multiple mouse devices moving in Unity!",
+  "unity": "2021.3",
+  "unityRelease": "22f1",
+  "documentationUrl": "",
+  "changelogUrl": "https://github.com/jackyyang09/Multi-Mouse-Unity/releases/tag/v.0.0.2s-alpha",
+  "licensesUrl": "https://raw.githubusercontent.com/jackyyang09/Multi-Mouse-Unity/main/LICENSE",
+  "keywords": [
+    "mouse",
+    "multi mouse",
+    "multiple"
+  ],
+  "author": {
+    "name": "Jacky Yang",
+    "email": "jackyyang267@gmail.com",
+    "url": "https://github.com/jackyyang09/Multi-Mouse-Unity"
+  }
+}
